@@ -1,219 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport"
-content="width=device-width,initial-scale=1">
-
-<title>Drive Research Manager</title>
-
-<style>
-body{
-	font-family:Arial;
-	background:#111827;
-	color:white;
-	margin:0;
-	padding:20px;
-}
-h1{
-	text-align:center;
-}
-.top{
-	display:flex;
-	gap:10px;
-	flex-wrap:wrap;
-	margin-bottom:20px;
-}
-button,input{
-	padding:10px;
-	border:none;
-	border-radius:10px;
-}
-button{
-	background:#2563eb;
-	color:white;
-	cursor:pointer;
-}
-button:hover{
-	background:#1d4ed8;
-}
-#cards{
-	display:grid;
-	grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
-	gap:15px;
-}
-.card{
-	background:#1f2937;
-	padding:15px;
-	border-radius:15px;
-	box-shadow:0 0 10px black;
-}
-.small{
-	opacity:.7;
-	font-size:12px;
-}
-.actions{
-	display:flex;
-	gap:8px;
-	margin-top:10px;
-	flex-wrap:wrap;
-}
-.rename{
-background:#eab308;
-}
-.delete{
-	background:#dc2626;
-}
-.download{
-	background:#16a34a;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport"content="width=device-width,initial-scale=1">
+    <title>Drive Research Manager</title>
+    <style>
+        body{
+            font-family:Arial;
+            background:#111827;
+            color:white;
+            margin:0;
+            padding: 0;
+        }
+        h1{
+            text-align:center;
+            margin:0;
+            padding:0px;
+        }
+        .top{
+            display:flex;
+            flex-wrap:wrap;
+            justify-content:center; 
+            align-items:center;  
+        }
+        button,input{
+            padding:10px;
+            border:none;
+            border-radius:10px;
+        }
+        button,input{
+            background:#2563eb;
+            color:white;
+            cursor:pointer;
+        }
+        button:hover{
+            background:#1d4ed8;
+        }
+        #cards{
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+            gap:15px;
+        }
+        .card{
+            background:#1f2937;
+            padding:15px;
+            border-radius:15px;
+            box-shadow:0 0 10px black;
+        }
+        .small{
+            opacity:.7;
+            font-size:12px;
+        }
+        .actions{
+            display:flex;
+            gap:8px;
+            margin-top:10px;
+            flex-wrap:wrap;
+        }
+        .rename{
+            background:#eab308;
+        }
+        .delete{
+            background:#dc2626;
+        }
+        .download{
+            background:#16a34a;
+        }
+        .headering{
+            background-color: #1f2937;
+            padding: 0px;
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
-<h1>Drive Research Manager</h1>
-<div class="top">
-	<button id="login">Login Google</button>
-	<input type="file" id="upload">
-	<button id="refresh">Refresh</button>
-</div>
-<div id="cards"></div>
-<script>
-const CLIENT_ID="1059917357836-7oop4rls49pto8fil203qkgab9vpe2eo.apps.googleusercontent.com"
-const API_KEY="AIzaSyDnnnWIj9RUJPFYj4qztAZD1B65wc2N8_k"
-const DISCOVERY="https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
-const SCOPES="https://www.googleapis.com/auth/drive"
-let token=""
-let tokenClient=null
-let googleReady=false
-let gapiReady=false
-let initiolized=false
-function ready(){
-	if(googleReady&&gapiReady&&!initiolized){
-		initiolized=true
-		initialize()
-	}
-}
-function googleLoaded(){
-	googleReady=true
-	ready()
-}
-function gapiLoaded(){
-	gapiReady=true
-	gapi.load("client",ready)
-}
-async function initialize(){
-	try{
-		await gapi.client.init({apiKey:API_KEY,discoveryDocs:[DISCOVERY]})
-		tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:(resp)=>{token=resp.access_token;loadFiles()}})
-		console.log("Ready")
-	}catch(e){
-		console.error(e)
-		alert("Init failed")
-	}
-}
-login.onclick=()=>{
-	if(!tokenClient){
-		alert("Google loading...")
-		return
-	}
-	tokenClient.requestAccessToken({prompt:"consent"})
-}
-refresh.onclick=()=>{
-	if(!token){return}
-	loadFiles()
-}
-upload.onchange=uploadFile
-async function loadFiles(){
-	if(!token){return}
-	try{
-		const r=await gapi.client.drive.files.list({pageSize:100,fields:"files(id,name,size,modifiedTime)"})
-		render(r.result.files)
-	}
-	catch(e){
-		console.error(e)
-	}
-}
-function render(files){
-	cards.innerHTML=""
-	files.forEach(file=>{
-		const c=document.createElement("div")
-		c.className="card"
-		c.innerHTML=`
-			<h3>${file.name}</h3>
-			<div class="small">${format(file.size)}</div>
-			<div class="small">${new Date(file.modifiedTime).toLocaleString()}</div>
-			<div class="actions">
-				<button class="download" onclick="downloadFile('${file.id}')">Download</button>
-				<button class="rename" onclick="renameFile('${file.id}',\`${file.name}\`)">Rename</button>
-				<button class="delete" onclick="deleteFile('${file.id}')">Delete</button>
-			</div>`
-		cards.appendChild(c)
-	})
-}
-async function uploadFile(){
-	if(!token){return}
-	const file=upload.files[0]
-	if(!file){return}
-	const meta={name:file.name}
-	const form=new FormData()
-	form.append("metadata",new Blob([JSON.stringify(meta)],{type:"application/json"}))
-	form.append("file",file)
-	await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-		{
-			method:"POST",
-			headers:{
-				Authorization:"Bearer "+token
-			},
-			body:form
-		}
-	)
-	loadFiles()
-}
-async function deleteFile(id){
-	if(!confirm("Delete?")){return}
-	await fetch(`https://www.googleapis.com/drive/v3/files/${id}`,
-		{
-			method:"DELETE",
-			headers:{
-				Authorization:"Bearer "+token
-			}
-		}
-	)
-	loadFiles()
-}
-async function renameFile(id,oldName){
-	const newName=prompt("New name",oldName)
-	if(!newName){return}
-	await fetch(`https://www.googleapis.com/drive/v3/files/${id}`,
-		{
-			method:"PATCH",
-			headers:{
-				Authorization:"Bearer "+token,
-				"Content-Type":"application/json"
-			},
-			body:JSON.stringify({name:newName})
-		}
-	)
-	loadFiles()
-}
-function downloadFile(id){
-	window.open(`https://drive.google.com/uc?id=${id}&export=download`)
-}
-function format(bytes){
-    if(!bytes){return "?"}
-    bytes=Number(bytes)
-    const units=["B","KB","MB","GB"]
-    let i=0
-    while(bytes>=1024&&i<3){
-        bytes/=1024
-        i++
-    }
-    return bytes.toFixed(1)+" "+units[i]
-}
-</script>
-<script src="https://accounts.google.com/gsi/client" onload="googleLoaded()"></script>
-<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <div class="headering">
+        <br><h1>Drive Research Manager</h1><br>
+        <div class="top">
+            <center>
+                <div>
+                    <center>
+                        <button id="login" style="width: 32%;">Login</button>
+                        <button id="refresh" style="width: 32%;">Refresh</button>
+                        <button id="edit_emw_file" style="width: 32%;">make_file</button>
+                    </center>
+                </div><br>
+                <input type="file" id="upload"><br><br>
+            </center>
+        </div>
+    </div>
+    <div id="cards"></div>
+    <script>
+        const CLIENT_ID="1059917357836-7oop4rls49pto8fil203qkgab9vpe2eo.apps.googleusercontent.com"
+        const API_KEY="AIzaSyDnnnWIj9RUJPFYj4qztAZD1B65wc2N8_k"
+        const DISCOVERY="https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
+        const SCOPES="https://www.googleapis.com/auth/drive"
+        let token=""
+        let tokenClient=null
+        let googleReady=false
+        let gapiReady=false
+        let initiolized=false
+        function ready(){
+            if(googleReady&&gapiReady&&!initiolized){
+                initiolized=true
+                initialize()
+            }
+        }
+        function googleLoaded(){
+            googleReady=true
+            ready()
+        }
+        function gapiLoaded(){
+            gapiReady=true
+            gapi.load("client",ready)
+        }
+        async function initialize(){
+            try{
+                await gapi.client.init({apiKey:API_KEY,discoveryDocs:[DISCOVERY]})
+                tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:(resp)=>{token=resp.access_token;loadFiles()}})
+                console.log("Ready")
+            }catch(e){
+                console.error(e)
+                alert("Init failed")
+            }
+        }
+        login.onclick=()=>{
+            if(!tokenClient){
+                alert("Google loading...")
+                return
+            }
+            tokenClient.requestAccessToken({prompt:"consent"})
+        }
+        refresh.onclick=()=>{
+            if(!token){return}
+            loadFiles()
+        }
+        upload.onchange=uploadFile
+        async function loadFiles(){
+            if(!token){return}
+            try{
+                const r=await gapi.client.drive.files.list({pageSize:100,fields:"files(id,name,size,modifiedTime)"})
+                render(r.result.files)
+            }
+            catch(e){
+                console.error(e)
+            }
+        }
+        function render(files){
+            cards.innerHTML=""
+            files.forEach(file=>{
+                const c=document.createElement("div")
+                c.className="card"
+                c.innerHTML=`
+                    <h3>${file.name}</h3>
+                    <div class="small">${format(file.size)}</div>
+                    <div class="small">${new Date(file.modifiedTime).toLocaleString()}</div>
+                    <div class="actions">
+                        <button class="download" onclick="downloadFile('${file.id}')">Download</button>
+                        <button class="rename" onclick="renameFile('${file.id}',\`${file.name}\`)">Rename</button>
+                        <button class="delete" onclick="deleteFile('${file.id}')">Delete</button>
+                    </div>`
+                cards.appendChild(c)
+            })
+        }
+        async function uploadFile(){
+            if(!token){return}
+            const file=upload.files[0]
+            if(!file){return}
+            const meta={name:file.name}
+            const form=new FormData()
+            form.append("metadata",new Blob([JSON.stringify(meta)],{type:"application/json"}))
+            form.append("file",file)
+            await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+                {
+                    method:"POST",
+                    headers:{
+                        Authorization:"Bearer "+token
+                    },
+                    body:form
+                }
+            )
+            loadFiles()
+        }
+        async function deleteFile(id){
+            if(!confirm("Delete?")){return}
+            await fetch(`https://www.googleapis.com/drive/v3/files/${id}`,
+                {
+                    method:"DELETE",
+                    headers:{
+                        Authorization:"Bearer "+token
+                    }
+                }
+            )
+            loadFiles()
+        }
+        async function renameFile(id,oldName){
+            const newName=prompt("New name",oldName)
+            if(!newName){return}
+            await fetch(`https://www.googleapis.com/drive/v3/files/${id}`,
+                {
+                    method:"PATCH",
+                    headers:{
+                        Authorization:"Bearer "+token,
+                        "Content-Type":"application/json"
+                    },
+                    body:JSON.stringify({name:newName})
+                }
+            )
+            loadFiles()
+        }
+        function downloadFile(id){
+            window.open(`https://drive.google.com/uc?id=${id}&export=download`)
+        }
+        function format(bytes){
+            if(!bytes){return "?"}
+            bytes=Number(bytes)
+            const units=["B","KB","MB","GB"]
+            let i=0
+            while(bytes>=1024&&i<3){
+                bytes/=1024
+                i++
+            }
+            return bytes.toFixed(1)+" "+units[i]
+        }
+    </script>
+    <script src="https://accounts.google.com/gsi/client" onload="googleLoaded()"></script>
+    <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 </body>
 </html>
