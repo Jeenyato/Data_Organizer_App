@@ -138,6 +138,21 @@
         </div><br><br>
         <div id="cards"></div><br><br>
     </div>
+    <div id="content2" style="display:none;">
+        <header>📜محرر نصوص للبحث</header>
+            <div class="toolbar">
+                <button onclick="openEquation()">+ معادله</button>
+                <button onclick="savealldata()" style="background: #16a34a;">احفظ</button>
+                <button onclick="savealldata()" style="background:crimson;">امسح</button>
+                <button onclick="undothat()" style="background:darkorange;">تراجع خطوه</button>
+                
+            </div>
+            <div id="editor" contenteditable="true"></div>
+            <div id="equationPanel">
+                <math-field id="mathInput">\frac{a}{b}</math-field>
+                <button class="insert" onclick="insertEquation()">اضافه المعادله</button>
+            </div>
+        </div>
     <script>
         const CLIENT_ID="1059917357836-7oop4rls49pto8fil203qkgab9vpe2eo.apps.googleusercontent.com"
         const API_KEY="AIzaSyDnnnWIj9RUJPFYj4qztAZD1B65wc2N8_k"
@@ -174,6 +189,79 @@
                 console.error(e)
                 alert("Init failed")
             }
+        }
+        edit_emw_file.onclick=()=>{
+            if(!token){
+                alert("سجل دخول الأول");
+                return;
+            }
+            document.getElementById("content1").style.display="none";
+            document.getElementById("content2").style.display="block";
+        }
+        async function savealldata(){
+            if(!token){
+                alert("سجل دخول الأول");
+                return;
+            }
+            const content = editor.innerHTML;
+            const blob = new Blob(
+                [content],
+                {type:"text/html"}
+            );
+            const form = new FormData();
+            form.append("metadata",new Blob([JSON.stringify({name:"بحث جديد.html"})],{type:"application/json"}));
+            form.append("file",blob,"بحث جديد.html");
+            document.getElementById("loader").style.display="block";
+            document.getElementById("content2").style.display="none";
+            await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+                {
+                    method:"POST",
+                    headers:{
+                        Authorization:"Bearer "+token
+                    },
+                    body:form
+                }
+            );
+            loadFiles();
+            document.getElementById("content1").style.display="block";
+            document.getElementById("loader").style.display="none";
+        }
+        let savedRange=null;
+        const editor=document.getElementById("editor");
+        function saveCursor(){
+            let sel=window.getSelection();
+            if(sel.rangeCount){
+                savedRange=sel.getRangeAt(0);
+            }
+        }
+        editor.addEventListener("keyup",saveCursor);
+        editor.addEventListener("mouseup",saveCursor);
+        editor.addEventListener("touchend",saveCursor);
+        function undothat(){
+            editor.focus();
+            document.execCommand("undo");
+        }
+        function openEquation(){
+            saveCursor();
+            document.getElementById("equationPanel").style.display="block";
+            editor.style.display="none";
+        }
+        function insertEquation(){
+            const latex=document.getElementById("mathInput").value;
+            const equation=document.createElement("span");
+            equation.className="equation";
+            equation.innerHTML=`<math-field read-only>${latex}</math-field>`;
+            if(savedRange){
+                savedRange.insertNode(equation);
+                savedRange.setStartAfter(equation);
+                savedRange.collapse(true);
+                let sel=window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(savedRange);
+            }
+            document.getElementById("equationPanel").style.display="none";
+            editor.style.display="block";
+            editor.focus();
         }
         login.onclick=()=>{
             if(!tokenClient){
@@ -222,6 +310,8 @@
             const form=new FormData()
             form.append("metadata",new Blob([JSON.stringify(meta)],{type:"application/json"}))
             form.append("file",file)
+            document.getElementById("loader").style.display="block";
+            document.getElementById("content1").style.display="none";
             await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
                 {
                     method:"POST",
@@ -231,6 +321,9 @@
                     body:form
                 }
             )
+            document.getElementById("loader").style.display="none";
+            document.getElementById("content1").style.display="block";
+            document.getElementById("upload").value = "";
             loadFiles()
         }
         async function deleteFile(id){
@@ -274,7 +367,6 @@
             }
             return bytes.toFixed(1)+" "+units[i]
         }
-        render([{"id":"cc","name":"hi.test","modifiedTime":"2/5/2026","size":"1025"},{"id":"cc","name":"hi.test","modifiedTime":"2/5/2026","size":"1025"}])
     </script>
     <script src="https://accounts.google.com/gsi/client" onload="googleLoaded()"></script>
     <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
