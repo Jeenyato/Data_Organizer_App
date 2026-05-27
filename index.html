@@ -213,7 +213,12 @@
                 <button class="buttoniniditor insert" onclick="insertEquation()">اضافه المعادله</button>
             </div>
         </div>
-        
+        <div id="pdfviewer" style="display:none;">
+            <div class="backheader">
+                <button>رجوع</button>
+            </div>
+
+        </div>
     <script>
         const CLIENT_ID="1059917357836-7oop4rls49pto8fil203qkgab9vpe2eo.apps.googleusercontent.com"
         const API_KEY="AIzaSyDnnnWIj9RUJPFYj4qztAZD1B65wc2N8_k"
@@ -251,6 +256,7 @@
                     callback:(resp)=>{
                         token=resp.access_token;
                         const expireTime=Date.now()+(resp.expires_in*1000);
+                        tokenExpire=expireTime;
                         localStorage.setItem("drive_token",token);
                         localStorage.setItem("drive_token_expire",expireTime);
                         loadFiles();
