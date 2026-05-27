@@ -219,7 +219,8 @@
         const API_KEY="AIzaSyDnnnWIj9RUJPFYj4qztAZD1B65wc2N8_k"
         const DISCOVERY="https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
         const SCOPES="https://www.googleapis.com/auth/drive"
-        let token=""
+        let token=localStorage.getItem("drive_token") || ""
+        let tokenExpire=localStorage.getItem("drive_token_expire") || 0
         let tokenClient=null
         let googleReady=false
         let gapiReady=false
@@ -238,14 +239,30 @@
             gapiReady=true
             gapi.load("client",ready)
         }
+        function logout(){
+            localStorage.removeItem("drive_token");
+            localStorage.removeItem("drive_token_expire");
+            token="";
+        }
         async function initialize(){
             try{
                 await gapi.client.init({apiKey:API_KEY,discoveryDocs:[DISCOVERY]})
-                tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:(resp)=>{token=resp.access_token;loadFiles()}})
+                tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,
+                    callback:(resp)=>{
+                        token=resp.access_token;
+                        const expireTime=Date.now()+(resp.expires_in*1000);
+                        localStorage.setItem("drive_token",token);
+                        localStorage.setItem("drive_token_expire",expireTime);
+                        loadFiles();
+                    }
+                })
+                if(token && Date.now()<tokenExpire){
+                    loadFiles();
+                }
                 setTimeout(()=>{
-                document.getElementById("loader").style.display="none";
-                document.getElementById("content1").style.display="block";
-            },500)
+                    document.getElementById("loader").style.display="none";
+                    document.getElementById("content1").style.display="block";
+                },500)
             }catch(e){
                 console.error(e)
                 alert("Init failed")
@@ -342,8 +359,18 @@
             if(!token){return}
             loadFiles()
         }
+        setInterval(()=>{
+            if(token && Date.now() > tokenExpire - 60000){
+                tokenClient.requestAccessToken({prompt:""});
+            }
+        },30000);
         upload.onchange=uploadFile
         async function loadFiles(){
+            if(Date.now()>tokenExpire){
+                logout();
+                alert("انتهت الجلسة سجل دخول مرة أخرى");
+                return;
+            }
             if(!token){return}
             try{
                 const r=await gapi.client.drive.files.list({pageSize:100,fields:"files(id,name,size,modifiedTime)"})
