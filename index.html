@@ -1,10 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"content="width=device-width,initial-scale=1">
     <title>Drive Research Manager</title>
     <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            direction: rtl;
+            font-family:Arial;
+        }
+        #loader{
+            position:fixed;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background:#111827;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            align-items:center;
+            z-index:9999;
+            transition:opacity .5s;
+        }
+        .spinner{
+            width:80px;
+            height:80px;
+            border:6px solid #374151;
+            border-top:6px solid #2563eb;
+            border-radius:50%;
+            animation:spin 1s linear infinite;
+            margin-bottom:20px;
+        }
+        @keyframes spin{
+            0%{
+                transform:rotate(0deg);
+            }
+            100%{
+                transform:rotate(360deg);
+            }
+        }
+        .loadingText{
+            font-size:22px;
+            opacity:.85;
+        }
         body{
             font-family:Arial;
             background:#111827;
@@ -74,22 +116,28 @@
     </style>
 </head>
 <body>
-    <div class="headering">
-        <br><h1>Drive Research Manager</h1><br>
-        <div class="top">
-            <center>
-                <div>
-                    <center>
-                        <button id="login" style="width: 32%;">Login</button>
-                        <button id="refresh" style="width: 32%;">Refresh</button>
-                        <button id="edit_emw_file" style="width: 32%;">make_file</button>
-                    </center>
-                </div><br>
-                <input type="file" id="upload"><br><br>
-            </center>
-        </div>
+    <div id="loader">
+        <div class="spinner"></div>
+        <div class="loadingText">جاري التحميل...</div>
     </div>
-    <div id="cards"></div>
+    <div id="content1" style="display:none;">
+        <div class="headering">
+            <br><h1>ملفات البحث العلمي</h1><br>
+            <div class="top">
+                <center>
+                    <div>
+                        <center>
+                            <button id="login" style="width: 32%;">سجل دخول</button>
+                            <button id="refresh" style="width: 32%;">تحديث</button>
+                            <button id="edit_emw_file" style="width: 32%;">إنشاء ملف</button>
+                        </center>
+                    </div><br>
+                    <input type="file" id="upload"><br><br>
+                </center>
+            </div>
+        </div><br><br>
+        <div id="cards"></div><br><br>
+    </div>
     <script>
         const CLIENT_ID="1059917357836-7oop4rls49pto8fil203qkgab9vpe2eo.apps.googleusercontent.com"
         const API_KEY="AIzaSyDnnnWIj9RUJPFYj4qztAZD1B65wc2N8_k"
@@ -118,7 +166,10 @@
             try{
                 await gapi.client.init({apiKey:API_KEY,discoveryDocs:[DISCOVERY]})
                 tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:(resp)=>{token=resp.access_token;loadFiles()}})
-                console.log("Ready")
+                setTimeout(()=>{
+                document.getElementById("loader").style.display="none";
+                document.getElementById("content1").style.display="block";
+            },500)
             }catch(e){
                 console.error(e)
                 alert("Init failed")
@@ -223,6 +274,7 @@
             }
             return bytes.toFixed(1)+" "+units[i]
         }
+        render([{"id":"cc","name":"hi.test","modifiedTime":"2/5/2026","size":"1025"},{"id":"cc","name":"hi.test","modifiedTime":"2/5/2026","size":"1025"}])
     </script>
     <script src="https://accounts.google.com/gsi/client" onload="googleLoaded()"></script>
     <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
