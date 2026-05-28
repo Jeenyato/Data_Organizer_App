@@ -350,6 +350,10 @@
                 await gapi.client.init({apiKey:API_KEY,discoveryDocs:[DISCOVERY]})
                 tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,
                     callback:(resp)=>{
+                        if(resp.error){
+                            console.log(resp);
+                            return;
+                        }
                         token=resp.access_token;
                         const expireTime=Date.now()+(resp.expires_in*1000);
                         tokenExpire=expireTime;
@@ -461,30 +465,31 @@
                 alert("Google loading...")
                 return
             }
-            tokenClient.requestAccessToken({prompt:"consent"})
+            tokenClient.requestAccessToken({
+                prompt: token ? "" : "consent"
+            })
         }
         refresh.onclick=()=>{
             if(!token){return}
             loadFiles()
         }
-        setInterval(()=>{
+        async function refreshTokenSilently(){
             try{
-                if(tokenClient &&token &&Date.now() > tokenExpire - 60000){
+                if(
+                    tokenClient &&
+                    Date.now() > tokenExpire - 300000
+                ){
                     tokenClient.requestAccessToken({
-                        prompt:""
+                        prompt:"none"
                     });
                 }
             }catch(e){
                 console.log("silent refresh failed");
             }
-        },30000);
+        }
+        setInterval(refreshTokenSilently,60000);
         upload.onchange=uploadFile
         async function loadFiles(){
-            if(Date.now()>tokenExpire){
-                logout();
-                alert("انتهت الجلسة سجل دخول مرة أخرى");
-                return;
-            }
             if(!token){return}
             try{
                 const r=await gapi.client.drive.files.list({pageSize:100,fields:"files(id,name,size,modifiedTime)"})
