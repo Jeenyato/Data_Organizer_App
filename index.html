@@ -447,6 +447,7 @@
         const API_KEY="AIzaSyDnnnWIj9RUJPFYj4qztAZD1B65wc2N8_k"
         const DISCOVERY="https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
         const SCOPES="https://www.googleapis.com/auth/drive"
+        const menu = document.getElementById("floatingMenu");
         let token=localStorage.getItem("drive_token") || ""
         let tokenExpire=localStorage.getItem("drive_token_expire") || 0
         let tokenClient=null
