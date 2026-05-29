@@ -448,7 +448,7 @@
             </button>
         </div>
         <div class="viewercontent csvcontent">
-            <table id="csvTable"></table>
+            <div id="csvTable"></div>
         </div>
     </div>
     <script>
@@ -775,7 +775,7 @@
                 alert("فشل تشغيل الصوت");
             }
         }
-        async function saveCSV(){
+        async function saveCSV(){ //NOTE 
             const table=document.querySelector(".realtable");
             let csv=[];
             for(const row of table.rows){
