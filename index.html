@@ -243,37 +243,7 @@
         .audiocontent audio{
             width:100%;
         }
-        .csvcontent{
-            flex:1;
-            overflow:auto;
-            padding:15px;
-            background:#0f172a;
-        }
-        .tablewrapper{
-            width:100%;
-            overflow:auto;
-            border-radius:14px;
-            border:1px solid #334155;
-        }
-        .realtable{
-            border-collapse:collapse;
-            min-width:700px;
-            background:#111827;
-            color:white;
-        }
-        .realtable thead{
-            position:sticky;
-            top:0;
-            z-index:10;
-        }
-        .realtable th{
-            background:#1e293b;
-            color:#f8fafc;
-            padding:14px;
-            text-align:center;
-            border-bottom:2px solid #334155;
-            white-space:nowrap;
-        }
+        
         #floatingMenu{
             position:fixed;
             top:100px;
@@ -339,6 +309,83 @@
         .insert{
             width:100%;
             background:#16a34a;
+        }
+        @media(max-width:768px){
+            .csvcontent{
+                padding:5px;
+            }
+            .tablewrapper{
+                overflow-x:auto;
+            }
+            .realtable{
+                font-size:12px;
+            }
+            .realtable th,
+            .realtable td{
+                padding:8px 6px;
+                min-width:90px;
+            }
+            .backheader{
+                flex-wrap:wrap;
+                height:auto;
+                gap:5px;
+            }
+            .backheader button{
+                flex:1;
+                min-width:120px;
+                font-size:13px;
+                padding:10px;
+            }
+        }
+        .csvcontent{
+            flex:1;
+            overflow:auto;
+            padding:10px;
+            background:#0f172a;
+        }
+        .tablewrapper{
+            width:100%;
+            overflow:auto;
+            border-radius:14px;
+            border:1px solid #334155;
+        }
+        .realtable{
+            width:100%;
+            border-collapse:collapse;
+            background:#111827;
+            color:white;
+            table-layout:auto;
+        }
+        .realtable thead{
+            position:sticky;
+            top:0;
+            z-index:10;
+        }
+        .realtable th{
+            background:#1e293b;
+            color:#f8fafc;
+            padding:10px;
+            text-align:center;
+            border-bottom:2px solid #334155;
+            white-space:nowrap;
+            font-size:14px;
+        }
+        .realtable td{
+            padding:10px;
+            border-bottom:1px solid #334155;
+            text-align:center;
+            white-space:nowrap;
+            font-size:14px;
+        }
+        .realtable tr:hover td{
+            background:#1f2937;
+        }
+        .realtable tbody tr:nth-child(even){
+            background:#0f172a;
+        }
+        .csvbutomstops{
+            width:20%;
+            margin-right:10px;
         }
     </style>
 </head>
@@ -432,17 +479,17 @@
     </div>
     <div id="csvviewer" class="viewer" style="display:none;">
         <div class="backheader">
-            <button onclick="closeViewer('csvviewer')">
+            <button class="csvbutomstops" onclick="closeViewer('csvviewer')">
                 ⬅ رجوع
             </button>
-            <button onclick="saveCSV()" style="margin-right:10px;background:#16a34a;">
-                حفظ CSV
+            <button class="csvbutomstops" onclick="saveCSV()" style="background:#16a34a;">
+                حفظ
             </button>
-            <button>
-                اضف صف
+            <button class="csvbutomstops">
+                +صف
             </button>
-            <button>
-                اضف عامود
+            <button class="csvbutomstops">
+                +عامود
             </button>
         </div>
         <div class="viewercontent csvcontent">
@@ -816,7 +863,6 @@
             document.getElementById("loader").style.display="none";
             document.getElementById("content1").style.display="block";
             loadFiles();
-            alert("تم حفظ الملف الجديد");
         }
         async function openCSV(id){
             try{
@@ -893,6 +939,7 @@
                 fileName+".link"
             );
             document.getElementById("loader").style.display="flex";
+            document.getElementById("content1").style.display="none";
             await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
                 {
                     method:"POST",
@@ -903,6 +950,7 @@
                 }
             );
             document.getElementById("loader").style.display="none";
+            document.getElementById("content1").style.display="block";
             loadFiles();
         }
         function escapeHTML(str){
@@ -1028,8 +1076,8 @@
                     console.error(e);
                     alert("فشل فتح الرابط");
                 }
-                document.getElementById("content2").style.display="block";
                 document.getElementById("loader").style.display="none";
+                document.getElementById("content1").style.display="block";
                 return;
             }
             if(name.endsWith(".txt")){
