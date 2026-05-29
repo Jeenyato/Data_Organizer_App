@@ -437,7 +437,7 @@
             <button onclick="closeViewer('csvviewer')">
                 ⬅ رجوع
             </button>
-            <button onclick="saveCSV()"style="margin-right:10px;background:#16a34a;">
+            <button onclick="saveCSV()" style="margin-right:10px;background:#16a34a;">
                 حفظ CSV
             </button>
             <button>
@@ -554,6 +554,47 @@
             }else{
                 menu.style.display = "block";
             }
+        }
+        edit_emw_file_csv.onclick=()=>{
+            if(!token){
+                alert("سجل دخول الأول");
+                return;
+            }
+            const rows=[
+                ["الاسم","العمر",],
+                ["محمد","22",],
+                ["أحمد","25",]
+            ];
+            let html=`
+            <div class="tablewrapper">
+            <table class="realtable">
+            `;
+            html+="<thead><tr>";
+            rows[0].forEach(col=>{
+                html+=`
+                <th contenteditable="true">
+                    ${escapeHTML(col)}
+                </th>
+                `;
+            });
+            html+="</tr></thead>";
+            html+="<tbody>";
+            for(let i=1;i<rows.length;i++){
+                html+="<tr>";
+                rows[i].forEach(cell=>{
+                    html+=`
+                    <td contenteditable="true">
+                        ${escapeHTML(cell)}
+                    </td>
+                    `;
+                });
+                html+="</tr>";
+            }
+            html+="</tbody>";
+            html+="</table></div>";
+            document.getElementById("csvTable").innerHTML=html;
+            document.getElementById("content1").style.display="none";
+            document.getElementById("csvviewer").style.display="flex";
         }
         edit_emw_file_text.onclick=()=>{
             if(!token){
@@ -734,6 +775,51 @@
                 alert("فشل تشغيل الصوت");
             }
         }
+        async function saveCSV(){
+            const table=document.querySelector(".realtable");
+            let csv=[];
+            for(const row of table.rows){
+                let cols=[];
+                for(const cell of row.cells){
+                    cols.push(cell.innerText.trim());
+                }
+                csv.push(cols.join(";"));
+            }
+            const csvText=csv.join("\n");
+            const fileName="New_table_now.csv"
+            const blob=new Blob(
+                [csvText],
+                {type:"text/csv"}
+            );
+            const form=new FormData();
+            form.append(
+                "metadata",
+                new Blob(
+                    [JSON.stringify({
+                        name:fileName.endsWith(".csv")
+                            ? fileName
+                            : fileName+".csv"
+                    })],
+                    {type:"application/json"}
+                )
+            );
+            form.append("file",blob);
+            document.getElementById("loader").style.display="flex";
+            document.getElementById("csvviewer").style.display="none";
+            await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+                {
+                    method:"POST",
+                    headers:{
+                        Authorization:"Bearer "+token
+                    },
+                    body:form
+                }
+            );
+            document.getElementById("loader").style.display="none";
+            document.getElementById("content1").style.display="block";
+            loadFiles();
+            alert("تم حفظ الملف الجديد");
+        }
         async function openCSV(id){
             try{
                 document.getElementById("content1").style.display="none";
@@ -754,14 +840,14 @@
                 if(rows.length){
                     html+="<thead><tr>";
                     rows[0].forEach(col=>{
-                        html+=`<th>${escapeHTML(col)}</th>`;
+                        html+=`<th contenteditable="true">${escapeHTML(col)}</th>`;
                     });
                     html+="</tr></thead>";
                     html+="<tbody>";
                     for(let i=1;i<rows.length;i++){
                         html+="<tr>";
                         rows[i].forEach(cell=>{
-                            html+=`<td>${escapeHTML(cell)}</td>`;
+                            html+=`<td contenteditable="true">${escapeHTML(cell)}</td>`;
                         });
                         html+="</tr>";
                     }
@@ -820,9 +906,6 @@
             );
             document.getElementById("loader").style.display="none";
             loadFiles();
-        }
-        edit_emw_file_csv.onclick=()=>{
-            
         }
         function escapeHTML(str){
             return str
